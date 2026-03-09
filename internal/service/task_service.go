@@ -4,6 +4,7 @@ import (
 	"errors"
 	"time"
 
+	"todolist-api/internal/model"
 	"todolist-api/internal/repository"
 )
 
@@ -32,7 +33,7 @@ func NewTaskService(repo *repository.TaskRepository) *TaskService {
 }
 
 // ------------------- CREATE -------------------
-func (s *TaskService) CreateTask(task *repository.Task) error {
+func (s *TaskService) CreateTask(task *model.Task) error {
 	// Validações
 	if len(task.Title) < 3 || len(task.Title) > 100 {
 		return errors.New("título deve ter entre 3 e 100 caracteres")
@@ -55,17 +56,17 @@ func (s *TaskService) CreateTask(task *repository.Task) error {
 }
 
 // ------------------- LIST -------------------
-func (s *TaskService) ListTasks(filter map[string]interface{}) ([]repository.Task, error) {
+func (s *TaskService) ListTasks(filter map[string]interface{}) ([]model.Task, error) {
 	return s.repo.GetTasks(filter)
 }
 
 // ------------------- GET BY ID -------------------
-func (s *TaskService) GetTask(id string) (*repository.Task, error) {
+func (s *TaskService) GetTask(id string) (*model.Task, error) {
 	return s.repo.GetTaskByID(id)
 }
 
 // ------------------- UPDATE -------------------
-func (s *TaskService) UpdateTask(id string, updatedTask *repository.Task) error {
+func (s *TaskService) UpdateTask(id string, updatedTask *model.Task) error {
 	// Busca a task existente
 	task, err := s.repo.GetTaskByID(id)
 	if err != nil {
