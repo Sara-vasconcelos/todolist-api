@@ -9,6 +9,7 @@ import (
 	"todolist-api/internal/model"
 
 	"github.com/google/uuid" // biblioteca para gerar UUID
+	log "github.com/sirupsen/logrus"
 
 	"go.mongodb.org/mongo-driver/bson"  //formato de documentos usado pelo MongoDB
 	"go.mongodb.org/mongo-driver/mongo"
@@ -45,8 +46,31 @@ func (r *TaskRepository) CreateTask(task *model.Task) error {
 	task.CreatedAt = time.Now()
 	task.UpdatedAt = time.Now()
 
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "CreateTask",
+		"task_id":    task.ID,
+	}).Info("inserindo nova task no banco")
+
 	_, err := r.collection.InsertOne(ctx, task) //InsertOne: insere a task no MongoDB.
-	return err                                  //retorna um erro se houver
+	if err != nil {
+		log.WithFields(log.Fields{
+			"repository": "TaskRepository",
+			"operation":  "CreateTask",
+			"task_id":    task.ID,
+			"error":      err.Error(),
+		}).Error("erro ao inserir task no MongoDB")
+
+		return err
+	}
+
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "CreateTask",
+		"task_id":    task.ID,
+	}).Info("task inserida com sucesso")
+
+	return nil //retorna um erro se houver
 }
 
 // GetTasks retorna todas as tasks ou filtra por status/priority
@@ -63,11 +87,23 @@ func (r *TaskRepository) GetTasks(filter map[string]interface{}) ([]model.Task, 
 		query[k] = v //adiciona a chave e valor ao mapa query
 	}
 
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "GetTasks",
+		"filters":    query,
+	}).Info("buscando tasks no banco")
+
 	/*Find retorna um cursor para iterar sobre os resultados
 	defer cursor.Close() garante que o cursor será fechado
 	*/
 	cursor, err := r.collection.Find(ctx, query) //busca documentos no Mongo com base no filtro, que definimos acima.
 	if err != nil {
+		log.WithFields(log.Fields{
+			"repository": "TaskRepository",
+			"operation":  "GetTasks",
+			"error":      err.Error(),
+		}).Error("erro ao buscar tasks")
+
 		return nil, err
 	}
 	defer cursor.Close(ctx)
@@ -77,10 +113,22 @@ func (r *TaskRepository) GetTasks(filter map[string]interface{}) ([]model.Task, 
 	for cursor.Next(ctx) {
 		var task model.Task
 		if err := cursor.Decode(&task); err != nil {
+			log.WithFields(log.Fields{
+				"repository": "TaskRepository",
+				"operation":  "GetTasks",
+				"error":      err.Error(),
+			}).Error("erro ao decodificar task")
+
 			return nil, err
 		}
 		tasks = append(tasks, task)
 	}
+
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "GetTasks",
+		"total":      len(tasks),
+	}).Info("tasks retornadas com sucesso")
 
 	return tasks, nil
 }
@@ -90,16 +138,43 @@ func (r *TaskRepository) GetTaskByID(id string) (*model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "GetTaskByID",
+		"task_id":    id,
+	}).Info("buscando task por id")
+
 	// Agora buscamos pelo campo "id" (UUID) ao invés de _id do Mongo
 	var task model.Task
 	err := r.collection.FindOne(ctx, bson.M{"id": id}).Decode(&task)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
+
+			log.WithFields(log.Fields{
+				"repository": "TaskRepository",
+				"operation":  "GetTaskByID",
+				"task_id":    id,
+			}).Warn("task não encontrada")
+
 			return nil, ErrTaskNotFound
 		}
+
+		log.WithFields(log.Fields{
+			"repository": "TaskRepository",
+			"operation":  "GetTaskByID",
+			"task_id":    id,
+			"error":      err.Error(),
+		}).Error("erro ao buscar task")
+
 		return nil, err
 	}
+
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "GetTaskByID",
+		"task_id":    id,
+	}).Info("task encontrada")
 
 	return &task, nil
 }
@@ -111,6 +186,12 @@ func (r *TaskRepository) UpdateTask(id string, updatedTask *model.Task) error {
 
 	// Atualiza a data de modificação.
 	updatedTask.UpdatedAt = time.Now()
+
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "UpdateTask",
+		"task_id":    id,
+	}).Info("atualizando task")
 
 	/*
 		UpdateOne atualiza apenas os campos definidos em $set.
@@ -129,12 +210,33 @@ func (r *TaskRepository) UpdateTask(id string, updatedTask *model.Task) error {
 		}},
 	)
 	if err != nil {
+
+		log.WithFields(log.Fields{
+			"repository": "TaskRepository",
+			"operation":  "UpdateTask",
+			"task_id":    id,
+			"error":      err.Error(),
+		}).Error("erro ao atualizar task")
+
 		return err
 	}
 
 	if result.MatchedCount == 0 {
+
+		log.WithFields(log.Fields{
+			"repository": "TaskRepository",
+			"operation":  "UpdateTask",
+			"task_id":    id,
+		}).Warn("task não encontrada para atualização")
+
 		return ErrTaskNotFound
 	}
+
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "UpdateTask",
+		"task_id":    id,
+	}).Info("task atualizada com sucesso")
 
 	return nil
 }
@@ -144,15 +246,42 @@ func (r *TaskRepository) DeleteTask(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "DeleteTask",
+		"task_id":    id,
+	}).Info("removendo task")
+
 	// DeleteOne remove o documento pelo campo id (UUID)
 	result, err := r.collection.DeleteOne(ctx, bson.M{"id": id})
 	if err != nil {
+
+		log.WithFields(log.Fields{
+			"repository": "TaskRepository",
+			"operation":  "DeleteTask",
+			"task_id":    id,
+			"error":      err.Error(),
+		}).Error("erro ao deletar task")
+
 		return err
 	}
 
 	if result.DeletedCount == 0 {
+
+		log.WithFields(log.Fields{
+			"repository": "TaskRepository",
+			"operation":  "DeleteTask",
+			"task_id":    id,
+		}).Warn("task não encontrada para deleção")
+
 		return ErrTaskNotFound
 	}
+
+	log.WithFields(log.Fields{
+		"repository": "TaskRepository",
+		"operation":  "DeleteTask",
+		"task_id":    id,
+	}).Info("task removida com sucesso")
 
 	return nil
 }

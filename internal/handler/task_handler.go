@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
 
 	"todolist-api/internal/model"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
 // TaskHandler lida com requisições HTTP relacionadas a tarefas
@@ -34,6 +34,11 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 	/*Pega o JSON enviado e converte em uma struct do tipo Task*/
 	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "CreateTask",
+			"error":   err.Error(),
+		}).Error("erro ao decodificar JSON da requisição")
+
 		http.Error(w, "dados inválidos: "+err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -46,9 +51,21 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	/*Chama o TaskService para criar a task, passando um ponteiro para task
 	Valida as regras de negocio antes de salvar no banco*/
 	if err := h.service.CreateTask(&task); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "CreateTask",
+			"title":   task.Title,
+			"error":   err.Error(),
+		}).Error("erro ao criar tarefa")
+
 		http.Error(w, err.Error(), http.StatusBadRequest) //retorna 400 em caso de erro
 		return
 	}
+
+	log.WithFields(log.Fields{
+		"handler": "CreateTask",
+		"task_id": task.ID,
+		"status":  task.Status,
+	}).Info("tarefa criada com sucesso")
 
 	w.WriteHeader(http.StatusCreated) //retorna 201  em caso de sucesso
 	json.NewEncoder(w).Encode(task)   //envia o JSON da task criada de volta para o cliente, incluindo id, created_at e updated_at.
@@ -69,8 +86,18 @@ func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 		filter["priority"] = priority
 	}
 
+	log.WithFields(log.Fields{
+		"handler":  "ListTasks",
+		"filters":  filter,
+	}).Info("listando tarefas")
+
 	tasks, err := h.service.ListTasks(filter)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"handler": "ListTasks",
+			"error":   err.Error(),
+		}).Error("erro ao listar tarefas")
+
 		http.Error(w, err.Error(), http.StatusInternalServerError) // retorna 500 em caso de erro
 		return
 	}
@@ -85,6 +112,11 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 
 	// Validação do ID antes de chamar o service
 	if _, err := uuid.Parse(id); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "GetTask",
+			"task_id": id,
+		}).Warn("ID inválido recebido")
+
 		http.Error(w, "ID inválido", http.StatusBadRequest)
 		return
 	}
@@ -92,7 +124,12 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	// GET TASK BY ID
 	task, err := h.service.GetTask(id) //faz a busca pelo id, a service aplica as regras e chama o repository para pegar os dados do banco
 	if err != nil {
-		log.Printf("erro ao buscar task: %v", err)
+		log.WithFields(log.Fields{
+			"handler": "GetTask",
+			"task_id": id,
+			"error":   err.Error(),
+		}).Error("erro ao buscar task")
+
 		if errors.Is(err, repository.ErrTaskNotFound) {
 			http.Error(w, repository.ErrTaskNotFound.Error(), http.StatusNotFound) // 404
 			return
@@ -100,6 +137,11 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "erro interno do servidor", http.StatusInternalServerError) // 500
 		return
 	}
+
+	log.WithFields(log.Fields{
+		"handler": "GetTask",
+		"task_id": id,
+	}).Info("tarefa encontrada")
 
 	json.NewEncoder(w).Encode(task)
 }
@@ -111,18 +153,35 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 
 	// Validação do ID antes de chamar o service
 	if _, err := uuid.Parse(id); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "UpdateTask",
+			"task_id": id,
+		}).Warn("ID inválido recebido")
+
 		http.Error(w, "ID inválido", http.StatusBadRequest)
 		return
 	}
 
 	var updatedTask model.Task
 	if err := json.NewDecoder(r.Body).Decode(&updatedTask); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "UpdateTask",
+			"task_id": id,
+			"error":   err.Error(),
+		}).Error("erro ao decodificar JSON")
+
 		http.Error(w, "dados inválidos: "+err.Error(), http.StatusBadRequest) //400
 		return
 	}
 
 	// Chama o service para atualizar
 	if err := h.service.UpdateTask(id, &updatedTask); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "UpdateTask",
+			"task_id": id,
+			"error":   err.Error(),
+		}).Error("erro ao atualizar tarefa")
+
 		if errors.Is(err, repository.ErrTaskNotFound) {
 			http.Error(w, repository.ErrTaskNotFound.Error(), http.StatusNotFound) // 404
 			return
@@ -130,6 +189,11 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest) // 400 para validações
 		return
 	}
+
+	log.WithFields(log.Fields{
+		"handler": "UpdateTask",
+		"task_id": id,
+	}).Info("tarefa atualizada")
 
 	json.NewEncoder(w).Encode(updatedTask)
 }
@@ -141,11 +205,22 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 
 	//Validação do ID antes de chamar o service
 	if _, err := uuid.Parse(id); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "DeleteTask",
+			"task_id": id,
+		}).Warn("ID inválido recebido")
+
 		http.Error(w, "ID inválido", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.service.DeleteTask(id); err != nil {
+		log.WithFields(log.Fields{
+			"handler": "DeleteTask",
+			"task_id": id,
+			"error":   err.Error(),
+		}).Error("erro ao deletar tarefa")
+
 		if errors.Is(err, repository.ErrTaskNotFound) {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
@@ -153,6 +228,11 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	log.WithFields(log.Fields{
+		"handler": "DeleteTask",
+		"task_id": id,
+	}).Info("tarefa deletada")
 
 	w.WriteHeader(http.StatusNoContent)
 }

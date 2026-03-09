@@ -6,6 +6,7 @@ import (
 
 	"todolist-api/database"
 	"todolist-api/internal/handler"
+	"todolist-api/internal/logger"
 	"todolist-api/internal/repository"
 	"todolist-api/internal/service"
 	"todolist-api/routes"
@@ -18,12 +19,14 @@ func main() {
 	log.Println("Conexão com MongoDB estabelecida")
 
 	//Criar repository, service e handler
-	taskRepo := repository.NewTaskRepository()       // acesso ao banco
-	taskService := service.NewTaskService(taskRepo)  // regras de negócio
+	taskRepo := repository.NewTaskRepository()         // acesso ao banco
+	taskService := service.NewTaskService(taskRepo)    // regras de negócio
 	taskHandler := handler.NewTaskHandler(taskService) // handlers HTTP
 
 	//Registrar rotas
 	router := routes.RegisterRoutes(taskHandler)
+
+	logger.Init()
 
 	//Iniciar servidor HTTP
 	port := ":8080"
