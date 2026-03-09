@@ -5,12 +5,20 @@ import (
 	"time"
 
 	"todolist-api/internal/model"
-	"todolist-api/internal/repository"
 )
+
+// Interface que define os métodos que o repository precisa implementar
+type TaskRepository interface {
+	CreateTask(task *model.Task) error
+	GetTasks(filter map[string]interface{}) ([]model.Task, error)
+	GetTaskByID(id string) (*model.Task, error)
+	UpdateTask(id string, task *model.Task) error
+	DeleteTask(id string) error
+}
 
 // TaskService é responsável pelas regras de negócio
 type TaskService struct {
-	repo *repository.TaskRepository
+	repo TaskRepository
 }
 
 // constantes para validar status e prioridade
@@ -28,7 +36,7 @@ var validPriority = map[string]bool{
 }
 
 // NewTaskService cria uma instância do service
-func NewTaskService(repo *repository.TaskRepository) *TaskService {
+func NewTaskService(repo TaskRepository) *TaskService {
 	return &TaskService{repo: repo}
 }
 
