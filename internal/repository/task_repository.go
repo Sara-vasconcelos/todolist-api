@@ -8,8 +8,9 @@ import (
 	"todolist-api/database"
 	"todolist-api/internal/model"
 
-	"go.mongodb.org/mongo-driver/bson" //formato de documentos usado pelo MongoDB
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid" // biblioteca para gerar UUID
+
+	"go.mongodb.org/mongo-driver/bson"  //formato de documentos usado pelo MongoDB
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -36,6 +37,9 @@ func NewTaskRepository() *TaskRepository {
 func (r *TaskRepository) CreateTask(task *model.Task) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second) //contexto de 5s
 	defer cancel()
+
+	// Gera um UUID para a task (alteração para não depender do ObjectID do Mongo)
+	task.ID = uuid.New().String()
 
 	// Preenche os campos de data de criação e atualização da task.
 	task.CreatedAt = time.Now()
@@ -86,19 +90,17 @@ func (r *TaskRepository) GetTaskByID(id string) (*model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	//Converte string do ID para ObjectID, que é o tipo usado pelo Mongo
-	objID, _ := primitive.ObjectIDFromHex(id) // já é válido
-
-	//FindOne busca a task com _id igual ao objID
-	//Decode converte o documento Mongo para Task.
+	// Agora buscamos pelo campo "id" (UUID) ao invés de _id do Mongo
 	var task model.Task
-	err := r.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&task)
+	err := r.collection.FindOne(ctx, bson.M{"id": id}).Decode(&task)
+
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return nil, ErrTaskNotFound
 		}
 		return nil, err
 	}
+
 	return &task, nil
 }
 
@@ -106,8 +108,6 @@ func (r *TaskRepository) GetTaskByID(id string) (*model.Task, error) {
 func (r *TaskRepository) UpdateTask(id string, updatedTask *model.Task) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	objID, _ := primitive.ObjectIDFromHex(id) // já é válido / validação ja foi feita no handler
 
 	// Atualiza a data de modificação.
 	updatedTask.UpdatedAt = time.Now()
@@ -118,7 +118,7 @@ func (r *TaskRepository) UpdateTask(id string, updatedTask *model.Task) error {
 	*/
 	result, err := r.collection.UpdateOne(
 		ctx,
-		bson.M{"_id": objID},
+		bson.M{"id": id}, // agora usamos o campo id (UUID)
 		bson.M{"$set": bson.M{
 			"title":       updatedTask.Title,
 			"description": updatedTask.Description,
@@ -144,8 +144,8 @@ func (r *TaskRepository) DeleteTask(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	objID, _ := primitive.ObjectIDFromHex(id) // já é válido
-	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": objID}) //DeleteOne remove o documento pelo _id.
+	// DeleteOne remove o documento pelo campo id (UUID)
+	result, err := r.collection.DeleteOne(ctx, bson.M{"id": id})
 	if err != nil {
 		return err
 	}

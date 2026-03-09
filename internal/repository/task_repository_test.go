@@ -9,8 +9,9 @@ import (
 	"todolist-api/database"
 	"todolist-api/internal/model"
 
+	"github.com/google/uuid"
+
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func TestMain(m *testing.M) {
@@ -22,6 +23,7 @@ func TestMain(m *testing.M) {
 
 	os.Exit(code)
 }
+
 func setupTestRepository(t *testing.T) *TaskRepository {
 
 	collection := database.GetCollection("tasks_test_db", "tasks")
@@ -57,6 +59,10 @@ func TestCreateTask(t *testing.T) {
 
 	if err != nil {
 		t.Fatalf("erro ao criar task: %v", err)
+	}
+
+	if task.ID == "" {
+		t.Error("esperava UUID gerado")
 	}
 
 	if task.CreatedAt.IsZero() {
@@ -117,13 +123,7 @@ func TestGetTaskByID(t *testing.T) {
 	task := createTestTask()
 	_ = repo.CreateTask(task)
 
-	// precisamos pegar o ID real salvo no mongo
-	cursor, _ := repo.collection.Find(context.Background(), bson.M{})
-	var savedTask model.Task
-	cursor.Next(context.Background())
-	cursor.Decode(&savedTask)
-
-	result, err := repo.GetTaskByID(savedTask.ID)
+	result, err := repo.GetTaskByID(task.ID)
 
 	if err != nil {
 		t.Fatalf("erro ao buscar task por ID: %v", err)
@@ -138,7 +138,7 @@ func TestGetTaskByIDNotFound(t *testing.T) {
 
 	repo := setupTestRepository(t)
 
-	id := primitive.NewObjectID().Hex()
+	id := uuid.New().String()
 
 	_, err := repo.GetTaskByID(id)
 
@@ -154,11 +154,6 @@ func TestUpdateTask(t *testing.T) {
 	task := createTestTask()
 	_ = repo.CreateTask(task)
 
-	cursor, _ := repo.collection.Find(context.Background(), bson.M{})
-	var savedTask model.Task
-	cursor.Next(context.Background())
-	cursor.Decode(&savedTask)
-
 	update := &model.Task{
 		Title:       "Task Atualizada",
 		Description: "Descrição Atualizada",
@@ -167,7 +162,7 @@ func TestUpdateTask(t *testing.T) {
 		DueDate:     time.Now().Add(48 * time.Hour),
 	}
 
-	err := repo.UpdateTask(savedTask.ID, update)
+	err := repo.UpdateTask(task.ID, update)
 
 	if err != nil {
 		t.Fatalf("erro ao atualizar task: %v", err)
@@ -178,7 +173,7 @@ func TestUpdateTaskNotFound(t *testing.T) {
 
 	repo := setupTestRepository(t)
 
-	id := primitive.NewObjectID().Hex()
+	id := uuid.New().String()
 
 	update := createTestTask()
 
@@ -196,12 +191,7 @@ func TestDeleteTask(t *testing.T) {
 	task := createTestTask()
 	_ = repo.CreateTask(task)
 
-	cursor, _ := repo.collection.Find(context.Background(), bson.M{})
-	var savedTask model.Task
-	cursor.Next(context.Background())
-	cursor.Decode(&savedTask)
-
-	err := repo.DeleteTask(savedTask.ID)
+	err := repo.DeleteTask(task.ID)
 
 	if err != nil {
 		t.Fatalf("erro ao deletar task: %v", err)
@@ -212,11 +202,26 @@ func TestDeleteTaskNotFound(t *testing.T) {
 
 	repo := setupTestRepository(t)
 
-	id := primitive.NewObjectID().Hex()
+	id := uuid.New().String()
 
 	err := repo.DeleteTask(id)
 
 	if err == nil {
 		t.Error("esperava erro de task não encontrada")
+	}
+}
+
+func TestCreateTaskGeneratesValidUUID(t *testing.T) {
+
+	repo := setupTestRepository(t)
+
+	task := createTestTask()
+
+	_ = repo.CreateTask(task)
+
+	_, err := uuid.Parse(task.ID)
+
+	if err != nil {
+		t.Error("ID gerado não é um UUID válido")
 	}
 }

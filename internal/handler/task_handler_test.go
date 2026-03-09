@@ -11,6 +11,7 @@ import (
 	"todolist-api/internal/service"
 
 	"github.com/gorilla/mux"
+	"github.com/google/uuid"
 )
 
 // Mock do repository
@@ -67,6 +68,7 @@ func TestCreateTaskHandler(t *testing.T) {
 		t.Errorf("esperava status 201, recebeu %d", resp.StatusCode)
 	}
 }
+
 func TestCreateTaskInvalidJSON(t *testing.T) {
 
 	repo := &MockRepository{}
@@ -86,6 +88,7 @@ func TestCreateTaskInvalidJSON(t *testing.T) {
 		t.Errorf("esperava status 400, recebeu %d", resp.StatusCode)
 	}
 }
+
 func TestListTasks(t *testing.T) {
 
 	repo := &MockRepository{}
@@ -110,11 +113,13 @@ func TestGetTask(t *testing.T) {
 	svc := service.NewTaskService(repo)
 	handler := NewTaskHandler(svc)
 
-	req := httptest.NewRequest("GET", "/tasks/507f1f77bcf86cd799439011", nil)
+	id := uuid.New().String()
+
+	req := httptest.NewRequest("GET", "/tasks/"+id, nil)
 	w := httptest.NewRecorder()
 
 	req = mux.SetURLVars(req, map[string]string{
-		"id": "507f1f77bcf86cd799439011",
+		"id": id,
 	})
 
 	handler.GetTask(w, req)
@@ -132,6 +137,8 @@ func TestUpdateTask(t *testing.T) {
 	svc := service.NewTaskService(repo)
 	handler := NewTaskHandler(svc)
 
+	id := uuid.New().String()
+
 	body := `{
 		"title":"Updated Task",
 		"status":"pending",
@@ -139,11 +146,11 @@ func TestUpdateTask(t *testing.T) {
 		"due_date":"2030-12-31T00:00:00Z"
 	}`
 
-	req := httptest.NewRequest("PUT", "/tasks/507f1f77bcf86cd799439011", bytes.NewBufferString(body))
+	req := httptest.NewRequest("PUT", "/tasks/"+id, bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 
 	req = mux.SetURLVars(req, map[string]string{
-		"id": "507f1f77bcf86cd799439011",
+		"id": id,
 	})
 
 	handler.UpdateTask(w, req)
@@ -161,11 +168,13 @@ func TestDeleteTask(t *testing.T) {
 	svc := service.NewTaskService(repo)
 	handler := NewTaskHandler(svc)
 
-	req := httptest.NewRequest("DELETE", "/tasks/507f1f77bcf86cd799439011", nil)
+	id := uuid.New().String()
+
+	req := httptest.NewRequest("DELETE", "/tasks/"+id, nil)
 	w := httptest.NewRecorder()
 
 	req = mux.SetURLVars(req, map[string]string{
-		"id": "507f1f77bcf86cd799439011",
+		"id": id,
 	})
 
 	handler.DeleteTask(w, req)

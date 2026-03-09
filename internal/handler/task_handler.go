@@ -11,7 +11,7 @@ import (
 	"todolist-api/internal/service"
 
 	"github.com/gorilla/mux"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
 // TaskHandler lida com requisições HTTP relacionadas a tarefas
@@ -84,7 +84,7 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	id := params["id"]    //extrai o valor do parametro id
 
 	// Validação do ID antes de chamar o service
-	if _, err := primitive.ObjectIDFromHex(id); err != nil {
+	if _, err := uuid.Parse(id); err != nil {
 		http.Error(w, "ID inválido", http.StatusBadRequest)
 		return
 	}
@@ -110,7 +110,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	id := params["id"]
 
 	// Validação do ID antes de chamar o service
-	if _, err := primitive.ObjectIDFromHex(id); err != nil {
+	if _, err := uuid.Parse(id); err != nil {
 		http.Error(w, "ID inválido", http.StatusBadRequest)
 		return
 	}
@@ -140,7 +140,7 @@ func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	id := params["id"]
 
 	//Validação do ID antes de chamar o service
-	if _, err := primitive.ObjectIDFromHex(id); err != nil {
+	if _, err := uuid.Parse(id); err != nil {
 		http.Error(w, "ID inválido", http.StatusBadRequest)
 		return
 	}
