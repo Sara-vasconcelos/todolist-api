@@ -1,0 +1,23 @@
+
+services:
+  mongo:
+    image: mongo:6
+    container_name: todolist-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  api:
+    build: .
+    container_name: todolist-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mongo
+    command: ["./wait-for-mongo.sh", "mongo", "27017", "/app/main"]
+    environment:
+      - MONGO_URI=mongodb://mongo:27017
+
+volumes:
+  mongo-data:

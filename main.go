@@ -14,8 +14,7 @@ import (
 
 func main() {
 	//Conectar ao MongoDB
-	mongoURI := "mongodb://localhost:27017"
-	database.ConnectMongo(mongoURI)
+	database.ConnectMongo()
 	log.Println("Conexão com MongoDB estabelecida")
 
 	//Criar repository, service e handler

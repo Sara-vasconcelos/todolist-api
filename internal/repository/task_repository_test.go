@@ -16,8 +16,9 @@ import (
 
 func TestMain(m *testing.M) {
 
-	mongoURI := "mongodb://localhost:27017"
-	database.ConnectMongo(mongoURI)
+	// Define variável de ambiente para os testes
+	os.Setenv("MONGO_URI", "mongodb://localhost:27017")
+	database.ConnectMongo()
 
 	code := m.Run()
 
