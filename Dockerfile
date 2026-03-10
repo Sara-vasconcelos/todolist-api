@@ -1,5 +1,5 @@
 # imagem oficial do Go
-FROM golang:1.22
+FROM golang:1.24
 
 # pasta de trabalho dentro do container
 WORKDIR /app

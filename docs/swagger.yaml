@@ -1,0 +1,237 @@
+basePath: /
+definitions:
+  model.CreateTaskRequest:
+    properties:
+      description:
+        example: Aprender documentação com Swagger
+        type: string
+      due_date:
+        example: "2026-04-10T00:00:00Z"
+        type: string
+      priority:
+        enum:
+        - low
+        - medium
+        - high
+        example: high
+        type: string
+      title:
+        example: Estudar Golang
+        type: string
+    type: object
+  model.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  model.Task:
+    properties:
+      created_at:
+        example: "2026-03-10T10:00:00Z"
+        type: string
+      description:
+        example: Aprender documentação com Swagger
+        type: string
+      due_date:
+        example: "2026-04-10T00:00:00Z"
+        type: string
+      id:
+        example: 5386b9cf-e4c5-40e6-bc29-fc901dc04290
+        type: string
+      priority:
+        example: high
+        type: string
+      status:
+        example: pending
+        type: string
+      title:
+        example: Estudar Golang
+        type: string
+      updated_at:
+        example: "2026-03-10T10:00:00Z"
+        type: string
+    type: object
+  model.UpdateTaskRequest:
+    properties:
+      description:
+        type: string
+      due_date:
+        example: "2026-04-10T00:00:00Z"
+        type: string
+      priority:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API para gerenciamento de tarefas
+  title: Todo List API
+  version: "1.0"
+paths:
+  /tasks:
+    get:
+      consumes:
+      - application/json
+      description: Retorna todas as tarefas, com filtros opcionais de status e prioridade
+      parameters:
+      - description: Filtrar tarefas por status
+        enum:
+        - pending
+        - in_progress
+        - completed
+        - cancelled
+        in: query
+        name: status
+        type: string
+      - description: Filtrar tarefas por prioridade
+        enum:
+        - low
+        - medium
+        - high
+        in: query
+        name: priority
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Task'
+            type: array
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Listar todas as tarefas
+      tags:
+      - tarefas
+    post:
+      consumes:
+      - application/json
+      description: |-
+        Cria uma nova tarefa.
+
+        Regras:
+        - Título é obrigatório (mínimo 3 e máximo 100 caracteres)
+        - Status permitidos: pending, in_progress, completed, cancelled
+        - Prioridade: low, medium, high
+        - Data de vencimento não pode estar no passado
+      parameters:
+      - description: Dados da nova tarefa
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/model.CreateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.Task'
+        "400":
+          description: Data de vencimento no passado
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Criar tarefa
+      tags:
+      - tarefas
+  /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Deleta uma tarefa específica pelo ID
+      parameters:
+      - description: ID da Tarefa
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Task não encontrada
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Deletar tarefa
+      tags:
+      - tarefas
+    get:
+      consumes:
+      - application/json
+      description: Retorna uma tarefa específica pelo ID
+      parameters:
+      - description: ID da Tarefa
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Task'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Buscar tarefa por ID
+      tags:
+      - tarefas
+    put:
+      consumes:
+      - application/json
+      description: Atualiza o título ou status de uma tarefa pelo ID
+      parameters:
+      - description: ID da Tarefa
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Dados da tarefa
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/model.UpdateTaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Task'
+        "400":
+          description: Data de vencimento no passado
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Task não encontrada
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Erro interno
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Atualizar tarefa
+      tags:
+      - tarefas
+swagger: "2.0"

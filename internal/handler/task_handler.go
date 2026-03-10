@@ -9,8 +9,8 @@ import (
 	"todolist-api/internal/repository"
 	"todolist-api/internal/service"
 
-	"github.com/gorilla/mux"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -29,11 +29,32 @@ func NewTaskHandler(service *service.TaskService) *TaskHandler {
 w http.ResponseWriter : escreve a resposta HTTP
 r *http.Request: contém os dados da requisição (body, headers, query params).
 */
-func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
-	var task model.Task //recebe os dados enviados pelo cliente no corpo da requisição
 
-	/*Pega o JSON enviado e converte em uma struct do tipo Task*/
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
+// CreateTask cria uma nova tarefa
+// @Summary Criar tarefa
+// @Description Cria uma nova tarefa.
+// @Description
+// @Description Regras:
+// @Description - Título é obrigatório (mínimo 3 e máximo 100 caracteres)
+// @Description - Status permitidos: pending, in_progress, completed, cancelled
+// @Description - Prioridade: low, medium, high
+// @Description - Data de vencimento não pode estar no passado
+// @Tags tarefas
+// @Accept json
+// @Produce json
+// @Param task body model.CreateTaskRequest true "Dados da nova tarefa"
+// @Success 201 {object} model.Task
+// @Failure 400 {object} model.ErrorResponse "Título inválido (3-100 caracteres)"
+// @Failure 400 {object} model.ErrorResponse "Prioridade inválida"
+// @Failure 400 {object} model.ErrorResponse "Data de vencimento no passado"
+// @Failure 500 {object} model.ErrorResponse "Erro interno"
+// @Router /tasks [post]
+func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
+
+	var req model.CreateTaskRequest
+
+	/*Pega o JSON enviado e converte em uma struct do tipo CreateTaskRequest*/
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.WithFields(log.Fields{
 			"handler": "CreateTask",
 			"error":   err.Error(),
@@ -41,6 +62,14 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 
 		http.Error(w, "dados inválidos: "+err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	task := model.Task{
+		ID:          uuid.New().String(),
+		Title:       req.Title,
+		Description: req.Description,
+		Priority:    req.Priority,
+		DueDate:     req.DueDate,
 	}
 
 	// Define status padrão se não tiver sido fornecido
@@ -72,6 +101,17 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------- LIST TASKS -------------------
+
+// @Summary Listar todas as tarefas
+// @Description Retorna todas as tarefas, com filtros opcionais de status e prioridade
+// @Tags tarefas
+// @Accept json
+// @Produce json
+// @Param status query string false "Filtrar tarefas por status" Enums(pending,in_progress,completed,cancelled)
+// @Param priority query string false "Filtrar tarefas por prioridade" Enums(low,medium,high)
+// @Success 200 {array} model.Task
+// @Failure 500 {object} model.ErrorResponse "Erro interno"
+// @Router /tasks [get]
 func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 	filter := make(map[string]interface{})
 
@@ -87,8 +127,8 @@ func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.WithFields(log.Fields{
-		"handler":  "ListTasks",
-		"filters":  filter,
+		"handler": "ListTasks",
+		"filters": filter,
 	}).Info("listando tarefas")
 
 	tasks, err := h.service.ListTasks(filter)
@@ -106,6 +146,16 @@ func (h *TaskHandler) ListTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------- GET TASK BY ID -------------------
+
+// @Summary Buscar tarefa por ID
+// @Description Retorna uma tarefa específica pelo ID
+// @Tags tarefas
+// @Accept json
+// @Produce json
+// @Param id path string true "ID da Tarefa"
+// @Success 200 {object} model.Task
+// @Failure 404 {object} model.ErrorResponse
+// @Router /tasks/{id} [get]
 func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r) //pega os parametros da url
 	id := params["id"]    //extrai o valor do parametro id
@@ -147,6 +197,22 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------- UPDATE TASK -------------------
+
+// @Summary Atualizar tarefa
+// @Description Atualiza o título ou status de uma tarefa pelo ID
+// @Tags tarefas
+// @Accept json
+// @Produce json
+// @Param id path string true "ID da Tarefa"
+// @Param task body model.UpdateTaskRequest true "Dados da tarefa"
+// @Success 200 {object} model.Task
+// @Failure 400 {object} model.ErrorResponse "Título inválido (3-100 caracteres)"
+// @Failure 404 {object} model.ErrorResponse "Task não encontrada"
+// @Failure 400 {object} model.ErrorResponse "Status inválido"
+// @Failure 400 {object} model.ErrorResponse "Prioridade inválida"
+// @Failure 400 {object} model.ErrorResponse "Data de vencimento no passado"
+// @Failure 500 {object} model.ErrorResponse "Erro interno"
+// @Router /tasks/{id} [put]
 func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
@@ -162,16 +228,25 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var updatedTask model.Task
-	if err := json.NewDecoder(r.Body).Decode(&updatedTask); err != nil {
+	var req model.UpdateTaskRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		log.WithFields(log.Fields{
 			"handler": "UpdateTask",
 			"task_id": id,
 			"error":   err.Error(),
 		}).Error("erro ao decodificar JSON")
 
-		http.Error(w, "dados inválidos: "+err.Error(), http.StatusBadRequest) //400
+		http.Error(w, "dados inválidos: "+err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	updatedTask := model.Task{
+		Title:       req.Title,
+		Description: req.Description,
+		Status:      req.Status,
+		Priority:    req.Priority,
+		DueDate:     req.DueDate,
 	}
 
 	// Chama o service para atualizar
@@ -199,6 +274,16 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 // ------------------- DELETE TASK -------------------
+
+// @Summary Deletar tarefa
+// @Description Deleta uma tarefa específica pelo ID
+// @Tags tarefas
+// @Accept json
+// @Produce json
+// @Param id path string true "ID da Tarefa"
+// @Success 204
+// @Failure 404 {object} model.ErrorResponse "Task não encontrada"
+// @Router /tasks/{id} [delete]
 func (h *TaskHandler) DeleteTask(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]

@@ -9,7 +9,7 @@ API RESTful para gerenciamento de tarefas (ToDo List), construída em **Golang**
 - **Back-end:** Golang  
 - **Banco de Dados:** MongoDB (NoSQL)  
 - **Containerização:** Docker + Docker Compose  
-- **Testes/Documentação:** Swagger/OpenAPI - criar
+- **Testes/Documentação:** Swagger/OpenAPI
 
 ---
 
@@ -223,17 +223,21 @@ curl -X DELETE http://localhost:8080/tasks/<ID_DA_TAREFA>
 # Retorno esperado: StatusCode 204 (No Content)
 ```
 
-## Regras de Negócio
+## Documentação da API (Swagger)
 
-- **Status permitidos:** `pending`, `in_progress`, `completed`, `cancelled`
-- **Prioridade:** `low`, `medium`, `high`
+A documentação interativa está disponível em:
 
-### Validações:
+`http://localhost:8080/swagger/index.html_`
 
-- Título obrigatório (3 a 100 caracteres)
-- Status válido
-- Data de vencimento não pode ser no passado
-- Tarefas completed não podem ser editadas, apenas deletadas
+**Nela é possível:**
+
+- visualizar todos os endpoints
+
+- testar requisições
+
+- visualizar exemplos de JSON
+
+- verificar códigos de resposta da API
 
 ## Observações finais:
 

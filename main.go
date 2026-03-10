@@ -1,36 +1,55 @@
 package main
 
-import (
-	"log"
-	"net/http"
+// @title Todo List API
+// @version 1.0
+// @description API para gerenciamento de tarefas
+// @host localhost:8080
+// @BasePath /
 
-	"todolist-api/database"
-	"todolist-api/internal/handler"
-	"todolist-api/internal/logger"
-	"todolist-api/internal/repository"
-	"todolist-api/internal/service"
-	"todolist-api/routes"
+import (
+    "log"
+    "net/http"
+
+    "todolist-api/database"
+    "todolist-api/docs" // Importe normalmente para usar o SwaggerInfo
+    "todolist-api/internal/handler"
+    "todolist-api/internal/logger"
+    "todolist-api/internal/repository"
+    "todolist-api/internal/service"
+    "todolist-api/routes"
+
+    httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func main() {
-	//Conectar ao MongoDB
-	database.ConnectMongo()
-	log.Println("Conexão com MongoDB estabelecida")
+    database.ConnectMongo()
 
-	//Criar repository, service e handler
-	taskRepo := repository.NewTaskRepository()         // acesso ao banco
-	taskService := service.NewTaskService(taskRepo)    // regras de negócio
-	taskHandler := handler.NewTaskHandler(taskService) // handlers HTTP
+    taskRepo := repository.NewTaskRepository()
+    taskService := service.NewTaskService(taskRepo)
+    taskHandler := handler.NewTaskHandler(taskService)
 
-	//Registrar rotas
-	router := routes.RegisterRoutes(taskHandler)
+    // 1. Configurar informações do Swagger ANTES de registrar as rotas
+    docs.SwaggerInfo.Title = "Todo List API"
+    docs.SwaggerInfo.Description = "API para gerenciamento de tarefas"
+    docs.SwaggerInfo.Version = "1.0"
+    docs.SwaggerInfo.Host = "localhost:8080"
+    docs.SwaggerInfo.BasePath = "/"
+    docs.SwaggerInfo.Schemes = []string{"http"}
 
-	logger.Init()
+    router := routes.RegisterRoutes(taskHandler)
 
-	//Iniciar servidor HTTP
-	port := ":8080"
-	log.Printf("Servidor rodando na porta %s", port)
-	if err := http.ListenAndServe(port, router); err != nil {
-		log.Fatal("Erro ao iniciar servidor:", err)
-	}
+    //Rota do Swagger com URL 
+    router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+        httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+    ))
+
+    logger.Init()
+
+    port := ":8080"
+    log.Printf("Servidor rodando na porta %s", port)
+    log.Printf("Swagger disponível em: http://localhost%s/swagger/index.html", port)
+
+    if err := http.ListenAndServe(port, router); err != nil {
+        log.Fatal("Erro ao iniciar servidor:", err)
+    }
 }
