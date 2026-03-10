@@ -15,9 +15,10 @@ API RESTful para gerenciamento de tarefas (ToDo List), construída em **Golang**
 
 ## Funcionalidades
 
-- CRUD completo de tarefas: criar, listar, buscar por ID, atualizar e deletar.  
-- Filtros: status (`pending`, `in_progress`, `completed`, `cancelled`) e prioridade (`low`, `medium`, `high`).  
-- Validações de negócio:
+- CRUD completo de tarefas: `criar, listar, buscar por ID, atualizar e deletar.` 
+- **Filtros:** status (`pending`, `in_progress`, `completed`, `cancelled`) e prioridade (`low`, `medium`, `high`).  
+
+- **Validações de negócio:**
   - Título obrigatório (3 a 100 caracteres).  
   - Status deve ser válido.  
   - Data de vencimento não pode ser no passado.  
@@ -27,6 +28,7 @@ API RESTful para gerenciamento de tarefas (ToDo List), construída em **Golang**
 
 ## Modelo de Dados
 
+```json
 {
   "id": "uuid",
   "title": "string",
@@ -37,39 +39,67 @@ API RESTful para gerenciamento de tarefas (ToDo List), construída em **Golang**
   "created_at": "timestamp",
   "updated_at": "timestamp"
 }
+```
 
 ## Setup e Execução com Docker
 
 ###  1 - Clonar o repositório
 
+```bash
 git clone <URL_DO_REPOSITORIO>
 cd <NOME_DO_REPOSITORIO>
-
+ 
+ ```
 ### 2 - Dar permissão de execução ao script de espera do Mongo
 
+```bash
 chmod +x wait-for-mongo.sh
+```
 
-O script wait-for-mongo.sh garante que o MongoDB esteja pronto antes da API iniciar.
+O script `wait-for-mongo.sh` garante que o MongoDB esteja pronto antes da API iniciar.
 
 ### 3 - Rodar o Docker Compose
 
+- **Linux/Mac:**
+
+```bash
 sudo docker compose up --build
+```
 
---build : força a reconstrução das imagens Docker.
+- **Windows:**
 
-docker compose up : inicia todos os serviços definidos (api e mongo).
+```bash
+docker compose up --build
+```
 
-A API ficará disponível em: http://localhost:8080
+### Observação:
 
-O MongoDB ficará disponível em: mongodb://localhost:27017
+`--build`: força a reconstrução das imagens Docker.
+
+`docker compose up`: inicia todos os serviços definidos (api e mongo).
+
+A API ficará disponível em: `http://localhost:8080`
+
+O MongoDB ficará disponível em: `mongodb://localhost:27017`
 
 ### 4 - Parar a aplicação
 
+- **Linux/Mac:**
+
+```bash
 sudo docker compose down
+```
+- **Windows:**
+
+```bash
+docker compose down
+```
 
 ## Endpoints Interativos (Testes com curl)
 
-- **Criar Tarefa**
+- ### **Criar Tarefa**
+
+```bash
 
 curl -X POST http://localhost:8080/tasks \
 -H "Content-Type: application/json" \
@@ -80,7 +110,11 @@ curl -X POST http://localhost:8080/tasks \
   "due_date": "2026-04-10"
 }'
 
+```
+
 **Exemplo de retorno:**
+
+```bash
 
 {
   "id": "192f3abe-2178-407b-af7c-25de48415711",
@@ -93,20 +127,31 @@ curl -X POST http://localhost:8080/tasks \
   "updated_at": "2026-03-10T01:33:42Z"
 }
 
-- **Listar Tarefas**
+```
+- ### **Listar Tarefas**
 
 Todas as tarefas: 
+
+```bash
 curl -X GET http://localhost:8080/tasks
+```
 
 Tarefas com status pending: 
+
+```bash
 curl -X GET "http://localhost:8080/tasks?status=pending"
+```
 
 Tarefas com prioridade alta: 
+
+```bash
 curl -X GET "http://localhost:8080/tasks?priority=high"
+```
 
 
 **Exemplo de retorno:**
 
+```bash
 [
   {
     "id": "1a2b3c4d",
@@ -119,14 +164,17 @@ curl -X GET "http://localhost:8080/tasks?priority=high"
     "updated_at": "2026-03-10T01:33:42Z"
   }
 ]
+```
 
+- ### Buscar Tarefa por ID
 
-- ## Buscar Tarefa por ID
-
+```bash
 curl -X GET http://localhost:8080/tasks/<ID_DA_TAREFA>
+```
 
 **Exemplo de retorno:**
 
+```bash
 {
   "id": "1a2b3c4d",
   "title": "Estudar Golang",
@@ -138,16 +186,22 @@ curl -X GET http://localhost:8080/tasks/<ID_DA_TAREFA>
   "updated_at": "2026-03-10T01:33:42Z"
 }
 
-- **Atualizar Tarefa**
+```
 
+- ### **Atualizar Tarefa**
+
+```bash
 curl -X PUT http://localhost:8080/tasks/<ID_DA_TAREFA> \
 -H "Content-Type: application/json" \
 -d '{
   "title": "Estudar Golang - Atualizado",
   "status": "in_progress"
 }'
+```
 
 **Exemplo de retorno:**
+
+```bash
 
 {
   "id": "1a2b3c4d",
@@ -160,18 +214,19 @@ curl -X PUT http://localhost:8080/tasks/<ID_DA_TAREFA> \
   "updated_at": "2026-03-10T01:50:00Z"
 }
 
-- **Deletar Tarefa**
+```
 
+- ### **Deletar Tarefa**
+
+```bash
 curl -X DELETE http://localhost:8080/tasks/<ID_DA_TAREFA>
-
-**Exemplo de retorno:**
-
-statusCode : 204
+# Retorno esperado: StatusCode 204 (No Content)
+```
 
 ## Regras de Negócio
 
-- **Status permitidos:** pending, in_progress, completed, cancelled
-- **Prioridade:** low, medium, high
+- **Status permitidos:** `pending`, `in_progress`, `completed`, `cancelled`
+- **Prioridade:** `low`, `medium`, `high`
 
 ### Validações:
 
@@ -182,7 +237,7 @@ statusCode : 204
 
 ## Observações finais:
 
-- Substitua <ID_DA_TAREFA> pelo id retornado ao criar ou listar tarefas.
+- Substitua `<ID_DA_TAREFA>` pelo id retornado ao criar ou listar tarefas.
 - Todos os serviços rodam localmente em containers, garantindo que a API funcione da mesma forma em qualquer máquina com Docker.
 - Para testar rapidamente, use os exemplos de curl direto no terminal.
 
