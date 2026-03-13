@@ -16,7 +16,7 @@ import (
 
 // TaskHandler lida com requisições HTTP relacionadas a tarefas
 type TaskHandler struct {
-	service *service.TaskService
+	service *service.TaskService //dependencia
 }
 
 // NewTaskHandler cria uma instância do handler
@@ -63,9 +63,9 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "dados inválidos: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-
+//cria a task
 	task := model.Task{
-		ID:          uuid.New().String(),
+		ID:          uuid.New().String(), //gera o uuid
 		Title:       req.Title,
 		Description: req.Description,
 		Priority:    req.Priority,
@@ -97,7 +97,7 @@ func (h *TaskHandler) CreateTask(w http.ResponseWriter, r *http.Request) {
 	}).Info("tarefa criada com sucesso")
 
 	w.WriteHeader(http.StatusCreated) //retorna 201  em caso de sucesso
-	json.NewEncoder(w).Encode(task)   //envia o JSON da task criada de volta para o cliente, incluindo id, created_at e updated_at.
+	json.NewEncoder(w).Encode(task)   //envia o JSON da task criada de volta para o cliente
 }
 
 // ------------------- LIST TASKS -------------------
@@ -171,7 +171,6 @@ func (h *TaskHandler) GetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// GET TASK BY ID
 	task, err := h.service.GetTask(id) //faz a busca pelo id, a service aplica as regras e chama o repository para pegar os dados do banco
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -240,7 +239,7 @@ func (h *TaskHandler) UpdateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "dados inválidos: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-
+//monto a task
 	updatedTask := model.Task{
 		Title:       req.Title,
 		Description: req.Description,

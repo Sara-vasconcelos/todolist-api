@@ -17,8 +17,7 @@ var Client *mongo.Client // armazena a conexão com o banco.
 func ConnectMongo() {
 	/*
 		Obtém a URI do MongoDB a partir da variável de ambiente.
-		No Docker Compose, você pode definir MONGO_URI=mongodb://mongo:27017/tasks_db
-		No ambiente local, pode ser MONGO_URI=mongodb://localhost:27017/tasks_db
+		No Docker Compose :MONGO_URI=mongodb://mongo:27017/tasks_db
 	*/
 	uri := os.Getenv("MONGO_URI")
 	if uri == "" {

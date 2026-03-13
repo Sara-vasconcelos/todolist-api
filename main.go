@@ -11,7 +11,7 @@ import (
     "net/http"
 
     "todolist-api/database"
-    "todolist-api/docs" // Importe normalmente para usar o SwaggerInfo
+    "todolist-api/docs" 
     "todolist-api/internal/handler"
     "todolist-api/internal/logger"
     "todolist-api/internal/repository"
@@ -28,7 +28,6 @@ func main() {
     taskService := service.NewTaskService(taskRepo)
     taskHandler := handler.NewTaskHandler(taskService)
 
-    // 1. Configurar informações do Swagger ANTES de registrar as rotas
     docs.SwaggerInfo.Title = "Todo List API"
     docs.SwaggerInfo.Description = "API para gerenciamento de tarefas"
     docs.SwaggerInfo.Version = "1.0"

@@ -1,7 +1,7 @@
-#!/bin/sh
+#!/bin/sh 
 # Espera até que o Mongo esteja disponível
 # Uso: ./wait-for-mongo.sh host port comando_a_executar
-
+# evita o que a aplicação tente se conectar no banco antes do banco estar pronto, o que causaria erro.
 HOST=$1
 PORT=$2
 shift 2

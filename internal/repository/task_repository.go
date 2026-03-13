@@ -144,7 +144,6 @@ func (r *TaskRepository) GetTaskByID(id string) (*model.Task, error) {
 		"task_id":    id,
 	}).Info("buscando task por id")
 
-	// Agora buscamos pelo campo "id" (UUID) ao invés de _id do Mongo
 	var task model.Task
 	err := r.collection.FindOne(ctx, bson.M{"id": id}).Decode(&task)
 

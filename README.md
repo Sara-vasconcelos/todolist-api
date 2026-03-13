@@ -95,7 +95,7 @@ sudo docker compose down
 docker compose down
 ```
 
-## Endpoints Interativos (Testes com curl)
+## Endpoints (Testes com curl)
 
 - ### **Criar Tarefa**
 
@@ -244,5 +244,6 @@ A documentação interativa está disponível em:
 - Substitua `<ID_DA_TAREFA>` pelo id retornado ao criar ou listar tarefas.
 - Todos os serviços rodam localmente em containers, garantindo que a API funcione da mesma forma em qualquer máquina com Docker.
 - Para testar rapidamente, use os exemplos de curl direto no terminal.
+- `Link da documentação da API`: https://editor.swagger.io/?url=https://raw.githubusercontent.com/Sara-vasconcelos/todolist-api/main/docs/swagger.yaml
 
 
